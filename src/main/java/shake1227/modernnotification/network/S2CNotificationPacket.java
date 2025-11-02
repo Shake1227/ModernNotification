@@ -10,8 +10,13 @@ import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.network.NetworkEvent;
 import shake1227.modernnotification.ModernNotification;
+// 修正: ClientConfig をインポート
+import shake1227.modernnotification.config.ClientConfig;
 import shake1227.modernnotification.core.NotificationCategory;
 import shake1227.modernnotification.core.NotificationType;
+import shake1227.modernnotification.core.ModSounds;
+import shake1227.modernnotification.log.LogManager;
+import shake1227.modernnotification.log.NotificationData;
 import shake1227.modernnotification.notification.Notification;
 import shake1227.modernnotification.notification.NotificationManager;
 
@@ -19,8 +24,6 @@ import java.util.List;
 import java.util.function.Supplier;
 
 public class S2CNotificationPacket {
-
-    public static final ResourceLocation NOTIFICATION_SOUND_ID = new ResourceLocation(ModernNotification.MOD_ID, "notificationsound");
 
     private final NotificationType type;
     private final NotificationCategory category;
@@ -73,14 +76,21 @@ public class S2CNotificationPacket {
                 ModernNotification.LOGGER.info("S2C: Packet handled on Client. Adding notification.");
 
                 Notification notification = new Notification(this.type, this.category, this.title, this.message, this.durationSeconds);
+
+                if (this.type != NotificationType.LEFT) {
+                    NotificationData logData = new NotificationData(notification);
+                    LogManager.getInstance().addLog(logData);
+                }
+
                 NotificationManager.getInstance().addNotification(notification);
 
                 if (this.type == NotificationType.ADMIN) {
-                    Minecraft.getInstance().player.playNotifySound(SoundEvents.NOTE_BLOCK_BELL.value(), SoundSource.MASTER, 1.0f, 1.0f);
+                    // 修正: Config から音量を取得
+                    float volume = ClientConfig.INSTANCE.notificationVolume.get().floatValue();
+                    Minecraft.getInstance().player.playNotifySound(ModSounds.NOTIFICATION_SOUND.get(), SoundSource.MASTER, volume, 1.0f);
                 }
             });
         });
         ctx.get().setPacketHandled(true);
     }
 }
-

@@ -1,6 +1,9 @@
 package shake1227.modernnotification;
 
 import com.mojang.logging.LogUtils;
+// 修正: KeyMapping をインポート
+import net.minecraft.client.KeyMapping;
+import net.minecraftforge.client.event.RegisterKeyMappingsEvent;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.eventbus.api.IEventBus;
@@ -13,8 +16,11 @@ import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import org.slf4j.Logger;
 import shake1227.modernnotification.client.ClientEvents;
+// 修正: Keybindings をインポート
+import shake1227.modernnotification.client.Keybindings;
 import shake1227.modernnotification.command.NotificationCommand;
 import shake1227.modernnotification.config.ClientConfig;
+import shake1227.modernnotification.core.ModSounds;
 import shake1227.modernnotification.network.PacketHandler;
 
 @Mod(ModernNotification.MOD_ID)
@@ -27,6 +33,10 @@ public class ModernNotification {
 
         modEventBus.addListener(this::commonSetup);
         modEventBus.addListener(this::clientSetup);
+        // 修正: キー登録イベントリスナーを追加
+        modEventBus.addListener(this::onRegisterKeyMappings);
+
+        ModSounds.SOUND_EVENTS.register(modEventBus);
 
         ModLoadingContext.get().registerConfig(ModConfig.Type.CLIENT, ClientConfig.SPEC, "modernnotification-client.toml");
 
@@ -52,6 +62,12 @@ public class ModernNotification {
         LOGGER.info("Client setup finished.");
     }
 
+    // 修正: キーバインド登録イベント
+    private void onRegisterKeyMappings(RegisterKeyMappingsEvent event) {
+        event.register(Keybindings.OPEN_LOG_KEY);
+        LOGGER.info("Keybindings registered.");
+    }
+
     @SubscribeEvent
     public void onRegisterCommands(RegisterCommandsEvent event) {
         LOGGER.info("Registering commands...");
@@ -59,4 +75,3 @@ public class ModernNotification {
         LOGGER.info("Commands registered.");
     }
 }
-

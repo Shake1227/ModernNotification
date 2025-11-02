@@ -22,19 +22,24 @@ public class TextFormattingUtils {
             return lines;
         }
 
-        String[] splitByNewline = text.split("&u");
+        // 修正点1: splitに -1 を指定し、末尾の空文字列（末尾の&u）も保持する
+        String[] splitByNewline = text.split("&u", -1);
+
+        // 修正点2: スタイルを改行後も引き継ぐため、ループの外で定義
+        Style currentStyle = Style.EMPTY;
 
         for (int i = 0; i < splitByNewline.length; i++) {
             String lineText = splitByNewline[i];
 
-            if (lineText.isEmpty() && i == splitByNewline.length - 1 && lines.size() > 0) {
-                continue;
-            }
+            // 修正点3: 不要な continue 条件を削除
+            // if (lineText.isEmpty() && i == splitByNewline.length - 1 && lines.size() > 0) {
+            //     continue;
+            // }
 
             MutableComponent currentLine = Component.empty();
             Matcher matcher = FORMATTING_CODE_PATTERN.matcher(lineText);
             int lastEnd = 0;
-            Style currentStyle = Style.EMPTY;
+            // Style currentStyle = Style.EMPTY; // ← 修正点2: ループの外に移動
 
             while (matcher.find()) {
                 int start = matcher.start();
@@ -91,4 +96,3 @@ public class TextFormattingUtils {
         }
     }
 }
-

@@ -37,6 +37,9 @@ public class ClientConfig {
     public final ForgeConfigSpec.ConfigValue<String> adminGradientStart;
     public final ForgeConfigSpec.ConfigValue<String> adminGradientEnd;
 
+    // 修正: 音量設定を追加
+    public final ForgeConfigSpec.DoubleValue notificationVolume;
+
     ClientConfig(ForgeConfigSpec.Builder builder) {
         builder.push("General");
         defaultDuration = builder
@@ -45,11 +48,11 @@ public class ClientConfig {
 
         backgroundColorTop = builder
                 .comment("Background color (Top) in RRGGBBAA hex format")
-                .define("backgroundColorTop", "000000CC");
+                .define("backgroundColorTop", "000000F2");
 
         backgroundColorBottom = builder
                 .comment("Background color (Bottom) in RRGGBBAA hex format")
-                .define("backgroundColorBottom", "222222CC");
+                .define("backgroundColorBottom", "222222F2");
         builder.pop();
 
         builder.push("Category Colors");
@@ -73,11 +76,16 @@ public class ClientConfig {
         builder.push("Admin Notification Colors");
         adminGradientStart = builder
                 .comment("Admin notification gradient start color (RRGGBBAA)")
-                .define("adminGradientStart", "FFA500FF");
+                .define("adminGradientStart", "B26B00CC");
         adminGradientEnd = builder
                 .comment("Admin notification gradient end color (RRGGBBAA)")
-                .define("adminGradientEnd", "FFD700FF");
+                .define("adminGradientEnd", "B28B00CC");
+
+        // 修正: 音量設定を追加 (0.0 から 1.0 の範囲)
+        notificationVolume = builder
+                .comment("Volume of the notification sound (0.0 = Mute, 1.0 = Max)")
+                .defineInRange("notificationVolume", 1.0, 0.0, 1.0);
+
         builder.pop();
     }
 }
-

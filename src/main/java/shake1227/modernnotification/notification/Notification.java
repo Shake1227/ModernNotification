@@ -59,6 +59,8 @@ public class Notification {
         this.previousAnimationProgress = this.animationProgress;
 
         int animationDuration = 10;
+        // 修正点: アニメーションの進行度（t）を計算
+        float t = (float) this.ticksExisted / animationDuration;
 
         switch (this.state) {
             case ENTERING:
@@ -67,7 +69,10 @@ public class Notification {
                     this.animationProgress = 1.0f;
                     this.ticksExisted = 0;
                 } else {
-                    this.animationProgress = (float) this.ticksExisted / animationDuration;
+                    // 修正点: t をイージング関数に渡す
+                    this.animationProgress = t; // イージングはRenderer側で行うか、ここで行う
+                    // Renderer側で対応するため、ここでは線形のままにする
+                    // ※NotificationRenderer側で easeInOutCubic を適用するよう修正しました
                 }
                 break;
             case DISPLAYING:
@@ -83,7 +88,8 @@ public class Notification {
                 if (this.ticksExisted >= animationDuration) {
                     this.animationProgress = 0.0f;
                 } else {
-                    this.animationProgress = 1.0f - ((float) this.ticksExisted / animationDuration);
+                    // 修正点: t をイージング関数に渡す
+                    this.animationProgress = 1.0f - t; // Renderer側で対応
                 }
                 break;
         }
@@ -152,5 +158,14 @@ public class Notification {
     public void setTargetY(float targetY) {
         this.targetY = targetY;
     }
-}
 
+    // 修正点: 前回のビルドエラー解消
+    public float getPreviousY() {
+        return this.previousY;
+    }
+
+    // 修正点: 前回のビルドエラー解消
+    public float getTargetY() {
+        return this.targetY;
+    }
+}

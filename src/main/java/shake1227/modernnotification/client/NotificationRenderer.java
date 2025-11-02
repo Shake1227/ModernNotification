@@ -23,27 +23,29 @@ import java.util.List;
 
 public class NotificationRenderer {
 
-    private static final float LEFT_ALPHA = 0.8f;
-    private static final float LEFT_CORNER_RADIUS = 5.0f;
-
     private static final int LEFT_PADDING = 5;
     private static final int RIGHT_PADDING = 5;
     private static final int TOP_PADDING = 4;
     private static final int BOTTOM_PADDING = 4;
     private static final int ICON_SIZE = 8;
     private static final int ICON_MARGIN_RIGHT = 4;
-    private static final int LEFT_WIDTH = 130;
+    private static final int LEFT_WIDTH = 120;
 
     private static final int RIGHT_ICON_AREA_SIZE = 16;
     private static final int RIGHT_WIDTH = 160;
+    // 修正点1: right通知のテキストスケールを定義
+    private static final float RIGHT_TITLE_SCALE = 1.0f;
+    private static final float RIGHT_MESSAGE_SCALE = 0.9f;
+    private static final int RIGHT_LINE_SPACING = 1;
+
 
     private static final int ADMIN_TOP_PADDING = 5;
     private static final float ADMIN_Y_POS = 10.0f;
-    private static final int ADMIN_WIDTH = 220;
+    private static final int ADMIN_WIDTH = 180;
     private static final int ADMIN_PADDING_X = 8;
     private static final int ADMIN_PADDING_Y = 6;
-    private static final float ADMIN_TITLE_SCALE = 1.0f;
-    private static final float ADMIN_MESSAGE_SCALE = 0.9f;
+    private static final float ADMIN_TITLE_SCALE = 0.9f;
+    private static final float ADMIN_MESSAGE_SCALE = 0.8f;
     private static final int ADMIN_LINE_SPACING = 2;
 
     public void render(GuiGraphics guiGraphics, List<Notification> leftNotifications, List<Notification> rightNotifications, Notification adminNotification, float partialTicks) {
@@ -51,12 +53,12 @@ public class NotificationRenderer {
         int screenHeight = guiGraphics.guiHeight();
 
         for (Notification notification : leftNotifications) {
-            float yPos = MathUtils.lerp(notification.getPreviousY(), notification.getCurrentY(partialTicks), partialTicks);
+            float yPos = notification.getCurrentY(partialTicks);
             renderLeftNotification(guiGraphics, notification, 5, screenHeight / 2.0f - 20 + yPos, partialTicks);
         }
 
         for (Notification notification : rightNotifications) {
-            float yPos = MathUtils.lerp(notification.getPreviousY(), notification.getCurrentY(partialTicks), partialTicks);
+            float yPos = notification.getCurrentY(partialTicks);
             renderRightNotification(guiGraphics, notification, screenWidth - RIGHT_WIDTH - 5, 10 + yPos, partialTicks);
         }
 
@@ -75,7 +77,21 @@ public class NotificationRenderer {
             return Math.max(ICON_SIZE + TOP_PADDING + BOTTOM_PADDING, (lines.size() * lineHeight) + TOP_PADDING + BOTTOM_PADDING);
 
         } else if (notification.getType() == NotificationType.TOP_RIGHT) {
-            int textHeight = (font.lineHeight + 1) + font.lineHeight;
+            // 修正点1: right通知の高さを admin と同様に動的に計算
+            List<Component> titleLines = notification.getTitle();
+            List<Component> msgLines = notification.getMessage();
+
+            int titleHeight = 0;
+            if (!titleLines.isEmpty()) {
+                titleHeight = (int)((font.lineHeight * RIGHT_TITLE_SCALE + RIGHT_LINE_SPACING) * titleLines.size());
+            }
+
+            int msgHeight = 0;
+            if (!msgLines.isEmpty()) {
+                msgHeight = (int)((font.lineHeight * RIGHT_MESSAGE_SCALE + RIGHT_LINE_SPACING) * msgLines.size());
+            }
+
+            int textHeight = titleHeight + (titleHeight > 0 && msgHeight > 0 ? RIGHT_LINE_SPACING : 0) + msgHeight;
             return Math.max(RIGHT_ICON_AREA_SIZE + TOP_PADDING + BOTTOM_PADDING, textHeight + TOP_PADDING + BOTTOM_PADDING);
 
         } else if (notification.getType() == NotificationType.ADMIN) {
@@ -113,7 +129,7 @@ public class NotificationRenderer {
         int width = getWidth(notification);
         int height = getHeight(notification);
 
-        float smoothProgress = notification.getAnimationProgress(partialTicks);
+        float smoothProgress = MathUtils.easeInOutCubic(notification.getAnimationProgress(partialTicks));
         float startX = x;
         if (notification.getState() == Notification.NotificationState.ENTERING) {
             startX = (int) (x - (width + 5) * (1.0f - smoothProgress));
@@ -127,10 +143,7 @@ public class NotificationRenderer {
         int bgColor1 = ColorUtils.parseColor(ClientConfig.INSTANCE.backgroundColorTop.get());
         int bgColor2 = ColorUtils.parseColor(ClientConfig.INSTANCE.backgroundColorBottom.get());
 
-        RenderSystem.enableBlend();
-        RenderSystem.defaultBlendFunc();
-        drawRoundedRectGradient(guiGraphics, 0, 0, width, height, LEFT_CORNER_RADIUS, bgColor1, bgColor2, LEFT_ALPHA);
-        RenderSystem.disableBlend();
+        guiGraphics.fillGradient(0, 0, width, height, bgColor1, bgColor2);
 
         int iconX = LEFT_PADDING;
         int iconY = TOP_PADDING + (height - TOP_PADDING - BOTTOM_PADDING - ICON_SIZE) / 2;
@@ -161,7 +174,7 @@ public class NotificationRenderer {
         int width = getWidth(notification);
         int height = getHeight(notification);
 
-        float smoothProgress = notification.getAnimationProgress(partialTicks);
+        float smoothProgress = MathUtils.easeInOutCubic(notification.getAnimationProgress(partialTicks));
         float startX = x;
         if (notification.getState() == Notification.NotificationState.ENTERING) {
             startX = (int) (x + (width + 5) * (1.0f - smoothProgress));
@@ -183,19 +196,50 @@ public class NotificationRenderer {
         guiGraphics.drawString(font, iconText, iconX + (RIGHT_ICON_AREA_SIZE - iconTextWidth) / 2 + 1, iconY + (RIGHT_ICON_AREA_SIZE - font.lineHeight) / 2, notification.getCategory().getColor(), true);
 
         int textX = iconX + RIGHT_ICON_AREA_SIZE + ICON_MARGIN_RIGHT;
-        int textY = TOP_PADDING + (height - TOP_PADDING - BOTTOM_PADDING - (font.lineHeight * 2 + 1)) / 2;
 
+        // 修正点1: right通知のテキスト描画を admin と同様のロジックに変更
         List<Component> titleLines = notification.getTitle();
         List<Component> msgLines = notification.getMessage();
 
+        // テキスト全体の高さを計算 (getHeightからロジックを流用)
+        int titleHeight = 0;
         if (!titleLines.isEmpty()) {
-            guiGraphics.drawString(font, titleLines.get(0), textX, textY, 0xFFFFFF, true);
-            textY += font.lineHeight + 1;
+            titleHeight = (int)((font.lineHeight * RIGHT_TITLE_SCALE + RIGHT_LINE_SPACING) * titleLines.size());
+        }
+        int msgHeight = 0;
+        if (!msgLines.isEmpty()) {
+            msgHeight = (int)((font.lineHeight * RIGHT_MESSAGE_SCALE + RIGHT_LINE_SPACING) * msgLines.size());
+        }
+        int textHeight = titleHeight + (titleHeight > 0 && msgHeight > 0 ? RIGHT_LINE_SPACING : 0) + msgHeight;
+
+        // テキストを中央揃えにするためのY座標
+        int textY = TOP_PADDING + (height - TOP_PADDING - BOTTOM_PADDING - textHeight) / 2;
+
+
+        if (!titleLines.isEmpty()) {
+            guiGraphics.pose().pushPose();
+            guiGraphics.pose().scale(RIGHT_TITLE_SCALE, RIGHT_TITLE_SCALE, 1.0f);
+            for (Component line : titleLines) {
+                guiGraphics.drawString(font, line, (int)(textX / RIGHT_TITLE_SCALE), (int)(textY / RIGHT_TITLE_SCALE), 0xFFFFFF, true);
+                textY += (font.lineHeight * RIGHT_TITLE_SCALE + RIGHT_LINE_SPACING);
+            }
+            guiGraphics.pose().popPose();
+        }
+
+        if (!titleLines.isEmpty() && !msgLines.isEmpty()) {
+            textY += RIGHT_LINE_SPACING;
         }
 
         if (!msgLines.isEmpty()) {
-            guiGraphics.drawString(font, msgLines.get(0), textX, textY, 0xCCCCCC, false);
+            guiGraphics.pose().pushPose();
+            guiGraphics.pose().scale(RIGHT_MESSAGE_SCALE, RIGHT_MESSAGE_SCALE, 1.0f);
+            for (Component line : msgLines) {
+                guiGraphics.drawString(font, line, (int)(textX / RIGHT_MESSAGE_SCALE), (int)(textY / RIGHT_MESSAGE_SCALE), 0xCCCCCC, false);
+                textY += (font.lineHeight * RIGHT_MESSAGE_SCALE + RIGHT_LINE_SPACING);
+            }
+            guiGraphics.pose().popPose();
         }
+        // --- 修正ここまで ---
 
         renderTimerBar(guiGraphics, 0, height, width, 2, notification, partialTicks);
 
@@ -207,7 +251,7 @@ public class NotificationRenderer {
         int width = getWidth(notification);
         int height = getHeight(notification);
 
-        float smoothProgress = notification.getAnimationProgress(partialTicks);
+        float smoothProgress = MathUtils.easeInOutCubic(notification.getAnimationProgress(partialTicks));
         float startY = y;
         if (notification.getState() == Notification.NotificationState.ENTERING) {
             startY = (int) (y - (height + 5) * (1.0f - smoothProgress));
@@ -218,15 +262,14 @@ public class NotificationRenderer {
         guiGraphics.pose().pushPose();
         guiGraphics.pose().translate(x, startY, 100);
 
-        RenderSystem.disableBlend();
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
         int bgColor1 = ColorUtils.parseColor(ClientConfig.INSTANCE.adminGradientStart.get());
         int bgColor2 = ColorUtils.parseColor(ClientConfig.INSTANCE.adminGradientEnd.get());
         guiGraphics.fillGradient(0, 0, width, height, bgColor1, bgColor2);
-        RenderSystem.enableBlend();
+        RenderSystem.disableBlend();
 
-        int textX = ADMIN_PADDING_X;
         int textY = ADMIN_PADDING_Y;
-        int textWidth = width - ADMIN_PADDING_X * 2;
 
         List<Component> titleLines = notification.getTitle();
         List<Component> msgLines = notification.getMessage();
@@ -235,7 +278,9 @@ public class NotificationRenderer {
             guiGraphics.pose().pushPose();
             guiGraphics.pose().scale(ADMIN_TITLE_SCALE, ADMIN_TITLE_SCALE, 1.0f);
             for (Component line : titleLines) {
-                guiGraphics.drawString(font, line, (int)(textX / ADMIN_TITLE_SCALE), (int)(textY / ADMIN_TITLE_SCALE), 0xFFFFFF, true);
+                int textWidth = font.width(line);
+                float textX = (width / ADMIN_TITLE_SCALE - textWidth) / 2.0f;
+                guiGraphics.drawString(font, line, (int)textX, (int)(textY / ADMIN_TITLE_SCALE), 0xFFFFFF, true);
                 textY += (font.lineHeight * ADMIN_TITLE_SCALE + ADMIN_LINE_SPACING);
             }
             guiGraphics.pose().popPose();
@@ -249,7 +294,9 @@ public class NotificationRenderer {
             guiGraphics.pose().pushPose();
             guiGraphics.pose().scale(ADMIN_MESSAGE_SCALE, ADMIN_MESSAGE_SCALE, 1.0f);
             for (Component line : msgLines) {
-                guiGraphics.drawString(font, line, (int)(textX / ADMIN_MESSAGE_SCALE), (int)(textY / ADMIN_MESSAGE_SCALE), 0xFFFFFF, true);
+                int textWidth = font.width(line);
+                float textX = (width / ADMIN_MESSAGE_SCALE - textWidth) / 2.0f;
+                guiGraphics.drawString(font, line, (int)textX, (int)(textY / ADMIN_MESSAGE_SCALE), 0xFFFFFF, true);
                 textY += (font.lineHeight * ADMIN_MESSAGE_SCALE + ADMIN_LINE_SPACING);
             }
             guiGraphics.pose().popPose();
@@ -274,48 +321,4 @@ public class NotificationRenderer {
 
         guiGraphics.fillGradient(x, y, x + animatedWidth, y + height, color1, color2);
     }
-
-    private void drawRoundedRectGradient(GuiGraphics guiGraphics, float x, float y, float width, float height, float radius, int color1, int color2, float alpha) {
-        RenderSystem.enableBlend();
-        RenderSystem.defaultBlendFunc();
-        RenderSystem.setShader(GameRenderer::getPositionColorShader);
-
-        Matrix4f matrix = guiGraphics.pose().last().pose();
-        Tesselator tesselator = Tesselator.getInstance();
-        BufferBuilder bufferbuilder = tesselator.getBuilder();
-
-        float r1 = (float)(color1 >> 16 & 255) / 255.0F;
-        float g1 = (float)(color1 >> 8 & 255) / 255.0F;
-        float b1 = (float)(color1 & 255) / 255.0F;
-
-        float r2 = (float)(color2 >> 16 & 255) / 255.0F;
-        float g2 = (float)(color2 >> 8 & 255) / 255.0F;
-        float b2 = (float)(color2 & 255) / 255.0F;
-
-        bufferbuilder.begin(VertexFormat.Mode.TRIANGLE_FAN, DefaultVertexFormat.POSITION_COLOR);
-
-        bufferbuilder.vertex(matrix, x + radius, y + radius, 0).color(r1, g1, b1, alpha).endVertex();
-        int segments = 20;
-
-        drawCircleFan(bufferbuilder, matrix, x + width - radius, y + radius, radius, 270, 360, segments, r1, g1, b1, alpha);
-        drawCircleFan(bufferbuilder, matrix, x + width - radius, y + height - radius, radius, 0, 90, segments, r2, g2, b2, alpha);
-        drawCircleFan(bufferbuilder, matrix, x + radius, y + height - radius, radius, 90, 180, segments, r2, g2, b2, alpha);
-        drawCircleFan(bufferbuilder, matrix, x + radius, y + radius, radius, 180, 270, segments, r1, g1, b1, alpha);
-
-        tesselator.end();
-        RenderSystem.disableBlend();
-    }
-
-    private void drawCircleFan(BufferBuilder bufferbuilder, Matrix4f matrix, float cx, float cy, float radius, int startAngle, int endAngle, int segments, float r, float g, float b, float a) {
-        float angleStep = (float) Math.toRadians((double)(endAngle - startAngle) / segments);
-        float startRad = (float) Math.toRadians(startAngle);
-
-        for (int i = 0; i <= segments; i++) {
-            float angle = startRad + (angleStep * i);
-            float dx = (float) (Math.cos(angle) * radius);
-            float dy = (float) (Math.sin(angle) * radius);
-            bufferbuilder.vertex(matrix, cx + dx, cy + dy, 0).color(r, g, b, a).endVertex();
-        }
-    }
 }
-
