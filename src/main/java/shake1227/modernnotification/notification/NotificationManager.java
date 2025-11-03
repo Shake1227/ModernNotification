@@ -29,7 +29,6 @@ public class NotificationManager {
             }
             this.adminNotification = notification;
         } else {
-            // 新しい通知をリストの先頭 (0番目) に追加
             this.notifications.add(0, notification);
         }
         recalculateTargetY();
@@ -59,9 +58,6 @@ public class NotificationManager {
     private void recalculateTargetY() {
         float leftY = 0;
         float rightY = 0;
-
-        // 修正点3: ループを正順に戻す (新しい通知が Y=0 になるように)
-        // (リストの 0番目 = 新しい通知)
         for (Notification notification : notifications) {
 
             if (notification.getState() == Notification.NotificationState.EXITING) {

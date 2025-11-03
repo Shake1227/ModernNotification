@@ -35,8 +35,6 @@ public class LogManager {
     public static LogManager getInstance() {
         return INSTANCE;
     }
-
-    // ログを追加する
     public void addLog(NotificationData data) {
         if (data.getType() == NotificationType.LEFT) {
             return;
@@ -51,8 +49,6 @@ public class LogManager {
         this.currentLog.trimLogs(MAX_LOG_SIZE);
         saveLogToFile();
     }
-
-    // ブックマークを切り替える (単一)
     public void toggleBookmark(long id, NotificationType type) {
         checkAndLoadLog();
         Optional<NotificationData> data = findDataById(id, type);
@@ -61,8 +57,6 @@ public class LogManager {
             saveLogToFile();
         });
     }
-
-    // 選択されたログをブックマーク/ブックマーク解除する
     public void bookmarkSelected(Collection<Long> adminIds, Collection<Long> topRightIds, boolean bookmark) {
         checkAndLoadLog();
         this.currentLog.getAdminNotifications().stream()
@@ -73,12 +67,8 @@ public class LogManager {
                 .forEach(d -> d.setBookmarked(bookmark));
         saveLogToFile();
     }
-
-    // 修正点2: 選択されたログを削除する (ブックマークされたものは除く)
     public int deleteSelected(Collection<Long> adminIds, Collection<Long> topRightIds) {
         checkAndLoadLog();
-
-        // 削除する前に件数を数える
         long adminRemovedCount = this.currentLog.getAdminNotifications().stream()
                 .filter(d -> adminIds.contains(d.getId()) && !d.isBookmarked())
                 .count();
@@ -89,19 +79,14 @@ public class LogManager {
         int totalRemoved = (int)adminRemovedCount + (int)topRightRemovedCount;
 
         if (totalRemoved > 0) {
-            // 実際に削除
             this.currentLog.getAdminNotifications().removeIf(d -> adminIds.contains(d.getId()) && !d.isBookmarked());
             this.currentLog.getTopRightNotifications().removeIf(d -> topRightIds.contains(d.getId()) && !d.isBookmarked());
             saveLogToFile();
         }
         return totalRemoved;
     }
-
-    // 修正点2: フィルターされたログを削除する (ブックマークされたものは除く)
     public int deleteFiltered(List<NotificationData> filteredAdmin, List<NotificationData> filteredTopRight) {
         checkAndLoadLog();
-
-        // 削除対象のIDリストを作成
         List<Long> adminIdsToRemove = filteredAdmin.stream()
                 .filter(d -> !d.isBookmarked())
                 .map(NotificationData::getId)
@@ -111,8 +96,6 @@ public class LogManager {
                 .filter(d -> !d.isBookmarked())
                 .map(NotificationData::getId)
                 .collect(Collectors.toList());
-
-        // 件数を数える (removeIf は boolean しか返さないため)
         long adminRemovedCount = this.currentLog.getAdminNotifications().stream()
                 .filter(d -> adminIdsToRemove.contains(d.getId()))
                 .count();
@@ -123,7 +106,6 @@ public class LogManager {
         int totalRemoved = (int)adminRemovedCount + (int)topRightRemovedCount;
 
         if (totalRemoved > 0) {
-            // 実際に削除
             this.currentLog.getAdminNotifications().removeIf(d -> adminIdsToRemove.contains(d.getId()));
             this.currentLog.getTopRightNotifications().removeIf(d -> topRightIdsToRemove.contains(d.getId()));
             saveLogToFile();
@@ -139,9 +121,6 @@ public class LogManager {
 
         return list.stream().filter(d -> d.getId() == id).findFirst();
     }
-
-
-    // --- 既存のロード/セーブ/パス管理 (変更なし) ---
 
     private void checkAndLoadLog() {
         String logId = getLogFileIdentifier();

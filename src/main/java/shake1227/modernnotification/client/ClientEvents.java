@@ -7,7 +7,6 @@ import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import shake1227.modernnotification.ModernNotification;
-// 修正: GUI と Keybindings をインポート
 import shake1227.modernnotification.client.gui.NotificationLogScreen;
 import shake1227.modernnotification.notification.NotificationManager;
 
@@ -20,10 +19,7 @@ public class ClientEvents {
             Minecraft mc = Minecraft.getInstance();
             if (mc.player != null) {
                 NotificationManager.getInstance().update();
-
-                // 修正: キーが押されたらGUIを開く
                 while (Keybindings.OPEN_LOG_KEY.consumeClick()) {
-                    // 他の画面が開いていない時だけ開く
                     if (mc.screen == null) {
                         mc.setScreen(new NotificationLogScreen());
                     }

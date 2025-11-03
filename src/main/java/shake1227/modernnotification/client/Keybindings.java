@@ -14,7 +14,7 @@ public class Keybindings {
             KEY_OPEN_LOG,
             KeyConflictContext.IN_GAME,
             InputConstants.Type.KEYSYM,
-            GLFW.GLFW_KEY_RIGHT_SHIFT, // デフォルト: 右シフト
+            GLFW.GLFW_KEY_M,
             KEY_CATEGORY_MODERNNOTIFICATION
     );
 }

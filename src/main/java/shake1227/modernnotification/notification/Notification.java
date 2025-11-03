@@ -1,7 +1,7 @@
 package shake1227.modernnotification.notification;
 
 import net.minecraft.network.chat.Component;
-import shake1227.modernnotification.config.ClientConfig;
+import shake1227.modernnotification.config.ServerConfig;
 import shake1227.modernnotification.core.NotificationCategory;
 import shake1227.modernnotification.core.NotificationType;
 import shake1227.modernnotification.util.MathUtils;
@@ -32,13 +32,14 @@ public class Notification {
 
     private float animationProgress;
     private float previousAnimationProgress;
+    private int dynamicWidth = 0;
 
     public Notification(NotificationType type, NotificationCategory category, List<Component> title, List<Component> message, int durationSeconds) {
         this.type = type;
         this.category = category;
         this.title = title != null ? title : Collections.emptyList();
         this.message = message;
-        this.totalTicks = durationSeconds > 0 ? durationSeconds * 20 : ClientConfig.INSTANCE.defaultDuration.get() * 20;
+        this.totalTicks = durationSeconds > 0 ? durationSeconds * 20 : ServerConfig.INSTANCE.defaultDuration.get() * 20;
 
         this.ticksExisted = 0;
         this.state = NotificationState.ENTERING;
@@ -59,7 +60,6 @@ public class Notification {
         this.previousAnimationProgress = this.animationProgress;
 
         int animationDuration = 10;
-        // 修正点: アニメーションの進行度（t）を計算
         float t = (float) this.ticksExisted / animationDuration;
 
         switch (this.state) {
@@ -69,10 +69,7 @@ public class Notification {
                     this.animationProgress = 1.0f;
                     this.ticksExisted = 0;
                 } else {
-                    // 修正点: t をイージング関数に渡す
-                    this.animationProgress = t; // イージングはRenderer側で行うか、ここで行う
-                    // Renderer側で対応するため、ここでは線形のままにする
-                    // ※NotificationRenderer側で easeInOutCubic を適用するよう修正しました
+                    this.animationProgress = t;
                 }
                 break;
             case DISPLAYING:
@@ -88,8 +85,7 @@ public class Notification {
                 if (this.ticksExisted >= animationDuration) {
                     this.animationProgress = 0.0f;
                 } else {
-                    // 修正点: t をイージング関数に渡す
-                    this.animationProgress = 1.0f - t; // Renderer側で対応
+                    this.animationProgress = 1.0f - t;
                 }
                 break;
         }
@@ -159,13 +155,19 @@ public class Notification {
         this.targetY = targetY;
     }
 
-    // 修正点: 前回のビルドエラー解消
     public float getPreviousY() {
         return this.previousY;
     }
 
-    // 修正点: 前回のビルドエラー解消
     public float getTargetY() {
         return this.targetY;
+    }
+
+    public int getDynamicWidth() {
+        return dynamicWidth;
+    }
+
+    public void setDynamicWidth(int dynamicWidth) {
+        this.dynamicWidth = dynamicWidth;
     }
 }

@@ -12,7 +12,7 @@ import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.FormattedCharSequence;
 import org.joml.Matrix4f;
-import shake1227.modernnotification.config.ClientConfig;
+import shake1227.modernnotification.config.ServerConfig;
 import shake1227.modernnotification.core.NotificationCategory;
 import shake1227.modernnotification.core.NotificationType;
 import shake1227.modernnotification.notification.Notification;
@@ -33,7 +33,6 @@ public class NotificationRenderer {
 
     private static final int RIGHT_ICON_AREA_SIZE = 16;
     private static final int RIGHT_WIDTH = 160;
-    // 修正点1: right通知のテキストスケールを定義
     private static final float RIGHT_TITLE_SCALE = 1.0f;
     private static final float RIGHT_MESSAGE_SCALE = 0.9f;
     private static final int RIGHT_LINE_SPACING = 1;
@@ -59,25 +58,23 @@ public class NotificationRenderer {
 
         for (Notification notification : rightNotifications) {
             float yPos = notification.getCurrentY(partialTicks);
-            renderRightNotification(guiGraphics, notification, screenWidth - RIGHT_WIDTH - 5, 10 + yPos, partialTicks);
+            renderRightNotification(guiGraphics, notification, screenWidth - getWidth(notification) - 5, 10 + yPos, partialTicks); // 修正: getWidth(notification) を使用
         }
 
         if (adminNotification != null) {
-            renderAdminNotification(guiGraphics, adminNotification, (screenWidth - ADMIN_WIDTH) / 2.0f, ADMIN_Y_POS, partialTicks);
+            renderAdminNotification(guiGraphics, adminNotification, (screenWidth - getWidth(adminNotification)) / 2.0f, ADMIN_Y_POS, partialTicks); // 修正: getWidth(notification) を使用
         }
     }
 
     public int getHeight(Notification notification) {
         Font font = Minecraft.getInstance().font;
         if (notification.getType() == NotificationType.LEFT) {
-            int textWidth = LEFT_WIDTH - LEFT_PADDING - RIGHT_PADDING - ICON_SIZE - ICON_MARGIN_RIGHT;
             List<Component> lines = notification.getMessage();
             float scale = 0.9f;
             int lineHeight = (int)(font.lineHeight * scale) + 1;
             return Math.max(ICON_SIZE + TOP_PADDING + BOTTOM_PADDING, (lines.size() * lineHeight) + TOP_PADDING + BOTTOM_PADDING);
 
         } else if (notification.getType() == NotificationType.TOP_RIGHT) {
-            // 修正点1: right通知の高さを admin と同様に動的に計算
             List<Component> titleLines = notification.getTitle();
             List<Component> msgLines = notification.getMessage();
 
@@ -112,8 +109,7 @@ public class NotificationRenderer {
         }
         return 0;
     }
-
-    private int getWidth(Notification notification) {
+    private int getBaseWidth(Notification notification) {
         if (notification.getType() == NotificationType.LEFT) {
             return LEFT_WIDTH;
         } else if (notification.getType() == NotificationType.TOP_RIGHT) {
@@ -123,6 +119,56 @@ public class NotificationRenderer {
         }
         return 0;
     }
+    public int getWidth(Notification notification) {
+        int dynamicWidth = notification.getDynamicWidth();
+        if (dynamicWidth > 0) {
+            return dynamicWidth;
+        }
+        return getBaseWidth(notification);
+    }
+    public void calculateDynamicWidth(Notification notification) {
+        Font font = Minecraft.getInstance().font;
+        int baseWidth = getBaseWidth(notification);
+        int calculatedWidth = 0;
+
+        List<Component> title = notification.getTitle();
+        List<Component> message = notification.getMessage();
+
+        int maxTextWidth = 0;
+
+        if (notification.getType() == NotificationType.LEFT) {
+            float scale = 0.9f;
+            for (Component line : message) {
+                maxTextWidth = Math.max(maxTextWidth, (int)(font.width(line) * scale));
+            }
+            calculatedWidth = LEFT_PADDING + ICON_SIZE + ICON_MARGIN_RIGHT + maxTextWidth + RIGHT_PADDING;
+
+        } else if (notification.getType() == NotificationType.TOP_RIGHT) {
+            float titleScale = RIGHT_TITLE_SCALE;
+            float msgScale = RIGHT_MESSAGE_SCALE;
+            for (Component line : title) {
+                maxTextWidth = Math.max(maxTextWidth, (int)(font.width(line) * titleScale));
+            }
+            for (Component line : message) {
+                maxTextWidth = Math.max(maxTextWidth, (int)(font.width(line) * msgScale));
+            }
+            calculatedWidth = LEFT_PADDING + RIGHT_ICON_AREA_SIZE + ICON_MARGIN_RIGHT + maxTextWidth + RIGHT_PADDING;
+
+        } else if (notification.getType() == NotificationType.ADMIN) {
+            float titleScale = ADMIN_TITLE_SCALE;
+            float msgScale = ADMIN_MESSAGE_SCALE;
+            for (Component line : title) {
+                maxTextWidth = Math.max(maxTextWidth, (int)(font.width(line) * titleScale));
+            }
+            for (Component line : message) {
+                maxTextWidth = Math.max(maxTextWidth, (int)(font.width(line) * msgScale));
+            }
+            calculatedWidth = ADMIN_PADDING_X + maxTextWidth + ADMIN_PADDING_X;
+        }
+
+        notification.setDynamicWidth(Math.max(baseWidth, calculatedWidth));
+    }
+
 
     private void renderLeftNotification(GuiGraphics guiGraphics, Notification notification, float x, float y, float partialTicks) {
         Font font = Minecraft.getInstance().font;
@@ -140,8 +186,8 @@ public class NotificationRenderer {
         guiGraphics.pose().pushPose();
         guiGraphics.pose().translate(startX, y, 0);
 
-        int bgColor1 = ColorUtils.parseColor(ClientConfig.INSTANCE.backgroundColorTop.get());
-        int bgColor2 = ColorUtils.parseColor(ClientConfig.INSTANCE.backgroundColorBottom.get());
+        int bgColor1 = ColorUtils.parseColor(ServerConfig.INSTANCE.backgroundColorTop.get());
+        int bgColor2 = ColorUtils.parseColor(ServerConfig.INSTANCE.backgroundColorBottom.get());
 
         guiGraphics.fillGradient(0, 0, width, height, bgColor1, bgColor2);
 
@@ -185,8 +231,8 @@ public class NotificationRenderer {
         guiGraphics.pose().pushPose();
         guiGraphics.pose().translate(startX, y, 0);
 
-        int bgColor1 = ColorUtils.parseColor(ClientConfig.INSTANCE.backgroundColorTop.get());
-        int bgColor2 = ColorUtils.parseColor(ClientConfig.INSTANCE.backgroundColorBottom.get());
+        int bgColor1 = ColorUtils.parseColor(ServerConfig.INSTANCE.backgroundColorTop.get());
+        int bgColor2 = ColorUtils.parseColor(ServerConfig.INSTANCE.backgroundColorBottom.get());
         guiGraphics.fillGradient(0, 0, width, height, bgColor1, bgColor2);
 
         int iconX = LEFT_PADDING;
@@ -197,11 +243,9 @@ public class NotificationRenderer {
 
         int textX = iconX + RIGHT_ICON_AREA_SIZE + ICON_MARGIN_RIGHT;
 
-        // 修正点1: right通知のテキスト描画を admin と同様のロジックに変更
         List<Component> titleLines = notification.getTitle();
         List<Component> msgLines = notification.getMessage();
 
-        // テキスト全体の高さを計算 (getHeightからロジックを流用)
         int titleHeight = 0;
         if (!titleLines.isEmpty()) {
             titleHeight = (int)((font.lineHeight * RIGHT_TITLE_SCALE + RIGHT_LINE_SPACING) * titleLines.size());
@@ -212,7 +256,6 @@ public class NotificationRenderer {
         }
         int textHeight = titleHeight + (titleHeight > 0 && msgHeight > 0 ? RIGHT_LINE_SPACING : 0) + msgHeight;
 
-        // テキストを中央揃えにするためのY座標
         int textY = TOP_PADDING + (height - TOP_PADDING - BOTTOM_PADDING - textHeight) / 2;
 
 
@@ -239,7 +282,6 @@ public class NotificationRenderer {
             }
             guiGraphics.pose().popPose();
         }
-        // --- 修正ここまで ---
 
         renderTimerBar(guiGraphics, 0, height, width, 2, notification, partialTicks);
 
@@ -264,8 +306,8 @@ public class NotificationRenderer {
 
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
-        int bgColor1 = ColorUtils.parseColor(ClientConfig.INSTANCE.adminGradientStart.get());
-        int bgColor2 = ColorUtils.parseColor(ClientConfig.INSTANCE.adminGradientEnd.get());
+        int bgColor1 = ColorUtils.parseColor(ServerConfig.INSTANCE.adminGradientStart.get());
+        int bgColor2 = ColorUtils.parseColor(ServerConfig.INSTANCE.adminGradientEnd.get());
         guiGraphics.fillGradient(0, 0, width, height, bgColor1, bgColor2);
         RenderSystem.disableBlend();
 

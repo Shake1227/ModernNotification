@@ -10,7 +10,6 @@ import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.network.NetworkEvent;
 import shake1227.modernnotification.ModernNotification;
-// 修正: ClientConfig をインポート
 import shake1227.modernnotification.config.ClientConfig;
 import shake1227.modernnotification.core.NotificationCategory;
 import shake1227.modernnotification.core.NotificationType;
@@ -76,6 +75,7 @@ public class S2CNotificationPacket {
                 ModernNotification.LOGGER.info("S2C: Packet handled on Client. Adding notification.");
 
                 Notification notification = new Notification(this.type, this.category, this.title, this.message, this.durationSeconds);
+                NotificationManager.getInstance().getRenderer().calculateDynamicWidth(notification);
 
                 if (this.type != NotificationType.LEFT) {
                     NotificationData logData = new NotificationData(notification);
@@ -85,7 +85,6 @@ public class S2CNotificationPacket {
                 NotificationManager.getInstance().addNotification(notification);
 
                 if (this.type == NotificationType.ADMIN) {
-                    // 修正: Config から音量を取得
                     float volume = ClientConfig.INSTANCE.notificationVolume.get().floatValue();
                     Minecraft.getInstance().player.playNotifySound(ModSounds.NOTIFICATION_SOUND.get(), SoundSource.MASTER, volume, 1.0f);
                 }

@@ -17,9 +17,9 @@ public class ColorUtils {
                 return 0xFF000000 | (int) longVal;
             }
         } catch (NumberFormatException e) {
-            return 0xFFFFFFFF; // デフォルトは白
+            return 0xFFFFFFFF;
         }
-        return 0xFFFFFFFF; // デフォルトは白
+        return 0xFFFFFFFF;
     }
 
     public static int applyAlpha(int color, float alpha) {
