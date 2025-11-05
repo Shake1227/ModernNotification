@@ -127,7 +127,7 @@ public class NotificationLogScreen extends Screen {
                     .pos((this.width / 2) - (buttonWidth/2), y).size(buttonWidth, 20).build();
             this.addRenderableWidget(this.selectButton);
 
-            y += Y_PADDING; // Y=74
+            y += Y_PADDING;
 
             int selectedCount = this.selectedAdminIds.size() + this.selectedTopRightIds.size();
 

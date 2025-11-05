@@ -58,11 +58,11 @@ public class NotificationRenderer {
 
         for (Notification notification : rightNotifications) {
             float yPos = notification.getCurrentY(partialTicks);
-            renderRightNotification(guiGraphics, notification, screenWidth - getWidth(notification) - 5, 10 + yPos, partialTicks); // 修正: getWidth(notification) を使用
+            renderRightNotification(guiGraphics, notification, screenWidth - getWidth(notification) - 5, 10 + yPos, partialTicks);
         }
 
         if (adminNotification != null) {
-            renderAdminNotification(guiGraphics, adminNotification, (screenWidth - getWidth(adminNotification)) / 2.0f, ADMIN_Y_POS, partialTicks); // 修正: getWidth(notification) を使用
+            renderAdminNotification(guiGraphics, adminNotification, (screenWidth - getWidth(adminNotification)) / 2.0f, ADMIN_Y_POS, partialTicks);
         }
     }
 
